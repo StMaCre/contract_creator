@@ -1,0 +1,158 @@
+# Automated Contract and Annex 1 Generator
+
+## Overview
+
+This Python script automates the process of generating service contracts and corresponding Annex 1 (Technical Specification) documents. It reads meeting minutes from a `.docx` file, extracts key information (like report number, name, objectives, and timeline) using the Google Generative AI (Gemini) API, and populates predefined `.docx` templates.
+
+The script generates two separate output files:
+1.  The main **Service Contract** document.
+2.  An **Annex 1** document containing the report description, objectives, and a formatted timeline table.
+
+## Features
+
+*   Reads input from `.docx` files (Minutes, Contract Template, Annex 1 Template).
+*   Utilizes Google GenAI (Gemini) for intelligent information extraction from meeting minutes.
+*   Populates placeholders in Word templates (`.docx`).
+*   Generates separate Contract and Annex 1 output files.
+*   Preserves basic text formatting (font, size) from the template during placeholder replacement using run-level updates.
+*   Automatically creates a formatted table for the project timeline within the Annex 1 document.
+*   Includes prompt engineering to request specific output characteristics (e.g., British English, detailed objectives).
+*   Applies post-processing text replacements (e.g., standardizing "competence(s)").
+
+## Prerequisites
+
+Before running the script, ensure you have the following:
+
+1.  **Python 3.x:** Installed on your system.
+2.  **Required Python Libraries:** Install using pip:
+    ```bash
+    pip install python-docx google-generativeai python-dotenv
+    ```
+3.  **Google GenAI API Key:**
+    *   Obtain an API key from Google AI Studio ([https://aistudio.google.com/](https://aistudio.google.com/)).
+    *   Create a file named `.env` in the same directory as the scripts.
+    *   Add your API key to the `.env` file like this:
+        ```
+        API_KEY=YOUR_API_KEY_HERE
+        ```
+4.  **Script Files:**
+    *   `contract_generator.py` (This main script)
+    *   `google_setup.py` (Helper script provided previously to initialize the GenAI client)
+5.  **Input Word Documents:**
+    *   A meeting minutes `.docx` file containing the relevant information.
+    *   A main contract template `.docx` file with placeholders.
+    *   An Annex 1 template `.docx` file with placeholders and a specific table structure for the timeline.
+
+## Installation
+
+1.  Clone or download the script files (`contract_generator.py`, `google_setup.py`).
+2.  Install the required libraries as listed in the Prerequisites section:
+    ```bash
+    pip install python-docx google-generativeai python-dotenv
+    ```
+3.  Create the `.env` file and add your Google GenAI API Key.
+
+## Configuration
+
+Modify the following variables at the top of the `contract_generator.py` script:
+
+*   **File Paths:**
+    *   `BASE_DIR`: The directory containing your input template and minutes files (e.g., `"Contracts to be created"`).
+    *   `TEMPLATE_DOCX_PATH`: Full path to the main contract template file (uses `os.path.join`).
+    *   `ANNEX1_TEMPLATE_DOCX_PATH`: Full path to the Annex 1 template file (uses `os.path.join`).
+    *   `MINUTES_DOCX_PATH`: Full path to the meeting minutes file (uses `os.path.join`).
+    *   `OUTPUT_DIR`: The directory where the generated documents will be saved (e.g., `"generated_contracts"`). This directory will be created if it doesn't exist.
+
+*   **Contract Details:**
+    *   `CONTRACT_NUMBER_BASE`: The fixed prefix for the contract number (e.g., `"2024-DG EAC-ENESET"`).
+    *   `NEXT_CONTRACT_SEQ`: **IMPORTANT:** Manually update this integer for each new contract to ensure unique numbering (e.g., `13`, then `14`, etc.).
+    *   `CONTRACT_DATE`: Defaults to the current date (`YYYY-MM-DD`). Can be manually set to a different string if needed.
+    *   `DELIVERABLE_COORDINATOR`: The name of the coordinator to be inserted into the contract.
+
+*   **Placeholders (`PLACEHOLDERS` Dictionary):**
+    *   This dictionary maps the internal data keys used by the script to the exact placeholder text (e.g., `{{REPORT_NAME}}`) present in your `.docx` templates. Ensure these match precisely.
+    *   `TIMELINE_TABLE_PLACEHOLDER_TEXT`: Defines the specific text (`{{TIMELINE_TABLE_HERE}}`) that *must* be present within the placeholder table in the Annex 1 template.
+
+## Input File Formatting
+
+*   **Main Contract Template (`template.docx`):**
+    *   Should contain the standard contract structure.
+    *   Must include placeholders like `{{CONTRACT_NUMBER}}`, `{{CONTRACT_DATE}}`, `{{REPORT_NUMBER}}`, `{{REPORT_NAME}}`, `{{REPORT_OBJECTIVE}}`, `{{DELIVERABLE_COORDINATOR}}` where the dynamic information should be inserted.
+    *   The formatting (font, size, bolding) applied to the placeholder text in the template will generally be preserved in the output.
+
+*   **Annex 1 Template (`annex1_template.docx`):**
+    *   Should contain the structure for Annex 1.
+    *   Must include placeholders `{{REPORT_NAME}}` and `{{REPORT_OBJECTIVE}}`.
+    *   **Crucially:** It must contain a **1 row, 1 column table** (or a 1x2 table is also fine) exactly where you want the timeline to appear. Inside the *first cell* of this table, you **must** place the exact text defined by `TIMELINE_TABLE_PLACEHOLDER_TEXT` in the script (default: `{{TIMELINE_TABLE_HERE}}`). The script will find this table, clear the placeholder text, add headers, and populate it with the timeline data.
+
+*   **Minutes Document (`minutes.docx`):**
+    *   Must be a `.docx` file.
+    *   Should contain the necessary information for the script to extract:
+        *   The report number (e.g., "AR3").
+        *   The full report title/name.
+        *   A section (like an "Overview" or "Teaser") describing the report's objectives.
+        *   A table containing the timeline with dates and corresponding activities. The script expects the LLM to parse this into lines like "DD Month YYYY - Activity".
+
+## Usage
+
+1.  Ensure all prerequisites are met and configuration is set correctly in `contract_generator.py`.
+2.  Open a terminal or command prompt.
+3.  Navigate to the directory containing the script files.
+4.  Run the script:
+    ```bash
+    python contract_generator.py
+    ```
+5.  The script will print status messages indicating its progress (reading files, calling LLM, generating documents).
+6.  Check the specified `OUTPUT_DIR` for the generated `.docx` files.
+
+## Output Files
+
+The script generates two `.docx` files in the `OUTPUT_DIR`:
+
+1.  `Contract_[ReportNo]_[Date].docx`: The populated main service contract.
+2.  `Annex1_Contract_[ReportNo]_[Date].docx`: The populated Annex 1, including the automatically generated timeline table.
+
+*(Where `[ReportNo]` is the extracted report number (sanitized for filenames) and `[Date]` is the contract date)*.
+
+## How It Works
+
+1.  **Initialization:** Sets up the Google GenAI client using `google_setup.py`.
+2.  **Load Minutes:** Opens the `minutes.docx` file using `python-docx`, iterates through paragraphs and tables, and extracts all text content into a single string.
+3.  **LLM Extraction:**
+    *   Constructs specific prompts for each piece of information needed (report no, name, objective, timeline summary).
+    *   Includes instructions within the prompts for desired format (e.g., British English, detailed objective, specific timeline format).
+    *   Sends the prompts (along with the extracted minutes text) to the Google GenAI API.
+4.  **Post-Processing:**
+    *   Cleans up the LLM responses.
+    *   Applies specific text replacements (e.g., `competencies` -> `competences`) to the extracted objective text.
+5.  **Parse Timeline:** Splits the multi-line timeline summary string (received from the LLM) into a list of (Date, Activity) tuples.
+6.  **Prepare Data:** Creates separate dictionaries (`contract_data`, `annex1_data`) containing the information needed for each template. The `annex1_data` includes the *parsed* list of timeline tuples.
+7.  **Fill Templates:**
+    *   Calls the `fill_word_template` function for each output document (Contract and Annex 1).
+    *   **For Annex 1:** The function first specifically looks for the timeline placeholder table using `{{TIMELINE_TABLE_HERE}}`. If found, the `insert_timeline_table` helper function is called to clear the placeholder, add headers ("Date", "Activity"), and populate the table rows using the parsed timeline data.
+    *   **For both documents:** The function iterates through the provided data dictionary. For each key-value pair (excluding the special timeline data), it finds the corresponding placeholder text (e.g., `{{REPORT_NAME}}`) in the document (paragraphs and tables) and replaces it using run-level text replacement to preserve formatting.
+8.  **Save Output:** Saves the modified `Document` objects as new `.docx` files in the `OUTPUT_DIR`.
+
+## Troubleshooting
+
+*   **`FileNotFoundError`:** Double-check the file paths specified in the Configuration section. Ensure the files exist and the script has permission to read them. Make sure the `BASE_DIR` is correct relative to where you run the script.
+*   **`NameError: name '...' is not defined`:** This usually indicates a typo or programming error within the script itself. Review the indicated line number.
+*   **GenAI Errors (`[[RESPONSE BLOCKED]]`, `[[NO TEXT]]`, `[[GENERATION ERROR]]`):**
+    *   Check your `.env` file and ensure the `API_KEY` is correct and active.
+    *   Review Google AI Studio for potential API issues or quota limits.
+    *   Check the safety settings configured for your API key (they might be too restrictive).
+    *   The prompt might be causing issues. Try simplifying it or check the quality/content of the minutes text being sent.
+*   **Word Errors (`Error processing Word document...`):**
+    *   The template `.docx` file might be corrupted or contain complex features `python-docx` cannot handle. Try simplifying the template.
+    *   Ensure the Annex 1 template contains the `{{TIMELINE_TABLE_HERE}}` placeholder correctly within a 1x1 or 1x2 table.
+*   **Poor LLM Output (Incorrect/Incomplete Info):**
+    *   Review and refine the prompts in the `extract_info_from_minutes` function. Be more specific about the desired output.
+    *   Check the quality and clarity of the input `minutes.docx`. The LLM needs clear source material.
+    *   Adjust the `temperature` or `max_output_tokens` in the `GenerationConfig` if the output is too short or nonsensical.
+*   **Timeline Table Issues:**
+    *   Verify the `{{TIMELINE_TABLE_HERE}}` placeholder exists exactly as defined and is inside a table (preferably 1x2) in `annex1_template.docx`.
+    *   Check the console output for warnings during timeline parsing or table insertion. The LLM might not have returned the timeline string in the expected "Date - Activity" format.
+
+## License
+
+(Optional: Specify your license here. E.g., MIT, Apache 2.0, or "Proprietary")
