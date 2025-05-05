@@ -9,13 +9,13 @@ import re
 # --- Configuration ---
 TEMPLATE_DOCX_PATH = "Contracts to be created\PPMI ENESET service contracts - special conditions_template.docx"       # Path to your Word template
 ANNEX1_TEMPLATE_DOCX_PATH = "Contracts to be created\Annex 1 - Technical specification and timeline of the report.docx"
-MINUTES_DOCX_PATH = "Contracts to be created\ENESET kick off AR Successful learning trajectories minutes _v1.docx"        # Path to the text file with OCR'd minutes
+MINUTES_DOCX_PATH = "Contracts to be created\ENESET kick off AR Leading through adversity minutes v1 (002).docx"        # Path to the text file with OCR'd minutes
 OUTPUT_DIR = "generated_contracts"        # Directory to save the filled contracts
 
 # --- Predefined Contract Details (User Input) ---
 # You would typically get these from user input or another system
 CONTRACT_NUMBER_BASE = "2024-DG EAC-ENESET" # Base part, number gets added
-NEXT_CONTRACT_SEQ = 13 # The sequential number for this specific contract
+NEXT_CONTRACT_SEQ = 10 # The sequential number for this specific contract
 CONTRACT_DATE = datetime.date.today().strftime("%Y-%m-%d") # Or a specific date string
 DELIVERABLE_COORDINATOR = "Stéphanie Crêteur" # Example coordinator name
 
